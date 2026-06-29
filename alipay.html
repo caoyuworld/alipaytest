@@ -92,8 +92,9 @@
         alipayUrl += "&account=" + encodeURIComponent(account)
                   +  "&name=" + encodeURIComponent(realName);
     }
-    alipayUrl += "&amount=" + encodeURIComponent(amount)
-              +  "&memo=" + encodeURIComponent(memo);
+    // 个人转账 scheme 下金额通常不被预填，先注释掉测试不带金额能否拉起转账页
+    // alipayUrl += "&amount=" + encodeURIComponent(amount);
+    alipayUrl += "&memo=" + encodeURIComponent(memo);
 
     // 1. 先把协议链接绑定到按钮上，确保手动点击绝对可用
     document.getElementById('alipayLink').href = alipayUrl;
