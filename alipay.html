@@ -67,31 +67,53 @@
 
     // ======= 默认参数（URL 未传参时使用）=======
     var defaults = {
-        account: "18395089173",
+        userId: "",                 // 2088 开头的收款人 PID（外部 scheme 最稳的方式）
+        account: "18395089173",     // 收款人手机号（部分环境下外部 scheme 可能不生效）
         name: "蒲伟",
-        amount: "0.01",
+        amount: "499.00",
         memo: "订单号8494554"
     };
 
     // ======= 优先使用 URL 参数 =======
-    // 示例: alipay.html?account=13800138000&name=张三&amount=1.00&memo=测试订单
+    // 示例: alipay.html?userId=2088xxxx&amount=1.00&memo=测试订单
+    //  或:  alipay.html?account=13800138000&name=张三&amount=1.00&memo=测试订单
+    var userId = getQueryParam("userId", defaults.userId);
     var account = getQueryParam("account", defaults.account);
     var realName = getQueryParam("name", getQueryParam("realName", defaults.name));
     var amount = getQueryParam("amount", defaults.amount);
     var memo = getQueryParam("memo", defaults.memo);
 
     // ======= 拼接标准的支付宝 Schema 协议 =======
-    var alipayUrl = "alipays://platformapi/startapp?appId=09999988&actionType=toAccount&goBack=NO"
-                    + "&account=" + encodeURIComponent(account)
-                    + "&name=" + encodeURIComponent(realName)
-                    + "&amount=" + encodeURIComponent(amount)
-                    + "&memo=" + encodeURIComponent(memo);
+    // 有 userId 时优先用 userId（最稳），否则回退到 account + name
+    var alipayUrl = "alipays://platformapi/startapp?appId=09999988&actionType=toAccount&goBack=NO";
+    if (userId) {
+        alipayUrl += "&userId=" + encodeURIComponent(userId);
+    } else {
+        alipayUrl += "&account=" + encodeURIComponent(account)
+                  +  "&name=" + encodeURIComponent(realName);
+    }
+    alipayUrl += "&amount=" + encodeURIComponent(amount)
+              +  "&memo=" + encodeURIComponent(memo);
 
     // 1. 先把协议链接绑定到按钮上，确保手动点击绝对可用
     document.getElementById('alipayLink').href = alipayUrl;
 
-    // 2. 核心：页面加载完毕后立即执行自动跳转
+    // ======= 调试模式：alipay.html?debug=1 时显示最终 schema 且不自动跳转 =======
+    var debugMode = getQueryParam("debug", "") === "1";
+    if (debugMode) {
+        document.querySelector('.text').innerHTML =
+            '调试模式（不自动跳转）<br>请核对下方 schema，再点按钮手动拉起：';
+        var pre = document.createElement('div');
+        pre.style.cssText = 'margin:16px auto;max-width:90%;padding:12px;background:#fff;' +
+            'border:1px solid #e1e1e1;border-radius:6px;font-size:12px;color:#333;' +
+            'word-break:break-all;text-align:left;line-height:1.6;';
+        pre.textContent = alipayUrl;
+        document.querySelector('.container').appendChild(pre);
+    }
+
+    // 2. 核心：页面加载完毕后立即执行自动跳转（调试模式下跳过）
     window.onload = function() {
+        if (debugMode) return;
         // 延迟 150 毫秒执行，给部分手机浏览器（如 Safari/H5内核）留出稳定的响应时间
         setTimeout(function() {
             // 在当前页面直接拉起协议
